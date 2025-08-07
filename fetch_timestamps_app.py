@@ -12,7 +12,7 @@ from io import BytesIO
 from fpdf import FPDF
 import os
 
-pdk.settings.mapbox_api_key = st.secrets["mapbox"]["token"]
+pdk.settings.mapbox_api_key = 'pk.eyJ1IjoiaXJ3aW5hbWFnbyIsImEiOiJjbWUxbzFtdGswZ2c5MmhzYnV4c3FpNTBkIn0.HRktSNGUWpRIlBuzPX922Q'
 
 def get_zoom(min_lat, min_lon, max_lat, max_lon):
     corner1 = (min_lat, min_lon)
@@ -156,7 +156,7 @@ if uploaded_file:
         z = get_zoom(min_lat, min_lon, max_lat, max_lon)
         
         st.pydeck_chart(pdk.Deck(
-        map_style = 'https://basemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer',
+        map_style='mapbox://styles/mapbox/satellite-streets-v11',
         initial_view_state=pdk.ViewState(
             latitude=center_lat,
             longitude=center_lon,
@@ -187,6 +187,7 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"❌ Failed to process file: {e}")
+
 
 
 
