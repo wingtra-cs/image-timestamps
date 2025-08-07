@@ -12,7 +12,7 @@ from io import BytesIO
 from fpdf import FPDF
 import os
 
-pdk.settings.mapbox_api_key = 'pk.eyJ1IjoiaXJ3aW5hbWFnbyIsImEiOiJjbWUxbzFtdGswZ2c5MmhzYnV4c3FpNTBkIn0.HRktSNGUWpRIlBuzPX922Q'
+pdk.settings.mapbox_api_key = 'sk.eyJ1IjoiaXJ3aW5hbWFnbyIsImEiOiJjbWUxb2ozd2gwa21uMmpzaTdvMHMwYmJvIn0.T1e7hzmjId-ckuk4jwz-5A'
 
 def get_zoom(min_lat, min_lon, max_lat, max_lon):
     corner1 = (min_lat, min_lon)
@@ -187,6 +187,7 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"❌ Failed to process file: {e}")
+
 
 
 
