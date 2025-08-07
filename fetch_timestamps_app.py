@@ -9,10 +9,8 @@ import pytz
 from timezonefinder import TimezoneFinder
 
 from io import BytesIO
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
+from fpdf import FPDF
+import os
 
 
 def get_zoom(min_lat, min_lon, max_lat, max_lon):
@@ -42,7 +40,6 @@ def generate_pdf(json_data, mission_name):
     utc = []
     local = []
 
-    # Use coordinates from the first geotag
     lat = float(json_data['flights'][0]['geotag'][0]['coordinate'][0])
     lon = float(json_data['flights'][0]['geotag'][0]['coordinate'][1])
     tf = TimezoneFinder()
@@ -59,51 +56,54 @@ def generate_pdf(json_data, mission_name):
 
         utc.append(utc_time.strftime('%Y-%m-%d %H:%M'))
         local.append(local_time.strftime('%Y-%m-%d %H:%M'))
-
         idx += 1
 
-    # Prepare PDF in memory
+    # Create PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    elements = []
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Logo (centered)
+    if os.path.exists("logo.png"):
+        logo_width = 100
+        logo_height = 24
+        x_center = (pdf.w - logo_width) / 2
+        pdf.image("logo.png", x=x_center, w=logo_width, h=logo_height)
+        pdf.ln(8)
+    else:
+        pdf.ln(10)
+        
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Data Collection Report", ln=True, align='C')
 
-    styles = getSampleStyleSheet()
-    style_normal = styles['Normal']
-    style_title = styles['Title']
+    pdf.set_font("Arial", "", 12)
+    pdf.multi_cell(0, 6, "This report documents the images collected for a Wingtra flight. The corresponding capture time of each image is indicated in both UTC and local time zones.")
+    pdf.ln(10)
 
-    # Add logo
-    try:
-        logo = Image("logo.png", width=212, height=51)
-        elements.append(logo)
-        elements.append(Spacer(1, 12))
-    except Exception:
-        pass  # Skip logo if not found
+    # Table column dimensions
+    col_widths = [80, 55, 55]
+    col_titles = ["IMAGE NAME", "UTC TIME", "LOCAL TIME"]
 
-    elements.append(Paragraph('Data Collection Report', style_title))
-    elements.append(Spacer(1, 12))
+    # Draw colored background for header
+    pdf.set_fill_color(232, 76, 10)  # Hex #e84c0a
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Arial", "B", 10)
+    for i, title in enumerate(col_titles):
+        pdf.cell(col_widths[i], 8, title, border=1, align='C', fill=True)
+    pdf.ln()
 
-    intro_text = """
-    This report documents the images collected for a Wingtra flight.
-    The corresponding capture time of each image is indicated in both UTC and local time zones.
-    """
-    elements.append(Paragraph(intro_text.strip(), style_normal))
-    elements.append(Spacer(1, 24))
+    # Reset text color for body
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", "", 9)
+    for i, u, l in zip(img, utc, local):
+        pdf.cell(col_widths[0], 8, i, border=1, align='C')
+        pdf.cell(col_widths[1], 8, u, border=1, align='C')
+        pdf.cell(col_widths[2], 8, l, border=1, align='C')
+        pdf.ln()
 
-    table_data = [['IMAGE NAME', 'UTC TIME', 'LOCAL TIME']] + list(zip(img, utc, local))
-    table = Table(table_data, colWidths=[220, 115, 115])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e84c0a')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 8),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-    ]))
-
-    elements.append(table)
-    doc.build(elements)
+    # Finalize PDF
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    buffer.write(pdf_bytes)
     buffer.seek(0)
     return buffer
 
