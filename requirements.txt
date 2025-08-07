@@ -4,4 +4,4 @@ pydeck
 timezonefinder
 pytz
 geopy
-reportlab<4
+fpdf
